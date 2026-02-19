@@ -1,0 +1,36 @@
+# Environment variables (contains credentials)
+.env
+*.env
+!config/config.example.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Data dumps
+*.csv
+*.json
+!config/*.json
+
+# Logs
+*.log
