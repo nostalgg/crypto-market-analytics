@@ -2,6 +2,8 @@
 
 A PostgreSQL-based data warehouse for crypto market analytics, answering six core business questions using advanced SQL window functions, time-series analysis, and financial metrics computation.
 
+This repository also includes an **LLM-powered query assistant** (`llm_assistant/`) that lets you ask questions in plain English and get back auto-generated SQL, query results, charts, and AI-generated insights — powered by the Anthropic API.
+
 ## Business Questions
 
 | # | Question | SQL Techniques | Query File |
@@ -76,7 +78,6 @@ A PostgreSQL-based data warehouse for crypto market analytics, answering six cor
 ```
 SQL/
 ├── README.md                              # This file
-├── CLAUDE.md                              # Project configuration
 ├── config/
 │   └── config.example.env                 # Environment variables template
 ├── schema/
@@ -98,12 +99,57 @@ SQL/
 ├── deliverables/
 │   ├── phase1_domain_validation.md        # Asset selection & market events
 │   └── phase2_formula_validation.md       # Formula specs for all metrics
-└── agents/                                # Multi-agent system definitions
-    ├── orchestrator.md
-    ├── prompt_analysis_expert.md
-    ├── finance_domain_expert.md
-    ├── sql_datawarehouse_expert.md
-    └── python_financial_expert.md
+└── llm_assistant/                         # Natural-language query interface
+    ├── app.py                             # Streamlit UI (main entry point)
+    ├── db.py                              # PostgreSQL connection + run_query()
+    ├── llm.py                             # Anthropic API: SQL generation + insights
+    ├── schema_context.py                  # Static schema injected into every prompt
+    └── requirements.txt                   # Python dependencies
+```
+
+## LLM Assistant
+
+The `llm_assistant/` module adds a Streamlit web app on top of the warehouse.
+Ask a question in plain English and get back:
+
+1. **Auto-generated SQL** — translated by `claude-3-5-haiku-20241022`
+2. **Query results** — executed directly against PostgreSQL, displayed as a table
+3. **Auto chart** — line chart for time series, bar chart for rankings (via Plotly)
+4. **AI insight** — 2-4 sentences highlighting what the data actually shows
+
+### Architecture
+
+```
+User question
+     │
+     ▼
+nl_to_sql()          ← claude-3-5-haiku + SCHEMA_CONTEXT + few-shot examples
+     │
+     ▼
+run_query()          ← psycopg2, SELECT-only guard, 15 s statement timeout
+     │
+     ├─ success ──► maybe_chart() + generate_insight() → display
+     │
+     └─ error ───► nl_to_sql_with_error()   ← multi-turn retry with error context
+                        │
+                        └─ run_query() again → display (or surface both errors)
+```
+
+**Model**: `claude-3-5-haiku-20241022` — low cost (~$0.001/query), strong SQL generation.
+**Safety**: only `SELECT` statements are allowed; DB user should have `GRANT SELECT` only.
+
+### Setup
+
+```bash
+# 1. Install dependencies
+cd llm_assistant
+pip install -r requirements.txt
+
+# 2. Add credentials to config/.env
+#    Requires all existing DB vars + ANTHROPIC_API_KEY (see config.example.env)
+
+# 3. Launch
+streamlit run app.py
 ```
 
 ## Setup & Usage
